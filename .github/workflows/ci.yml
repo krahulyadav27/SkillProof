@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: skillproof_test
+          POSTGRES_USER: skillproof
+          POSTGRES_PASSWORD: skillproof
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U skillproof -d skillproof_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://skillproof:skillproof@localhost:5432/skillproof_test
+      JWT_SECRET: ci-jwt-secret-at-least-thirty-two-characters
+      RECEIPT_SIGNING_SECRET: ci-receipt-secret-at-least-thirty-two-characters
+      CLIENT_ORIGIN: http://localhost:5173
+      SEED_ADMIN_PASSWORD: ci-admin-password-longer-than-twelve
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+      - run: npm run db:seed
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
