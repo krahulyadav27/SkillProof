@@ -1,6 +1,7 @@
 import "./env.js";
 import express from "express";
 import cors from "cors";
+import { createCorsOptions } from "./config/cors.js";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
@@ -14,7 +15,7 @@ import { startAttempt, submitAttempt } from "./services/attemptService.js";
 import { verifySignature } from "./services/receiptService.js";
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173", credentials: true }));
+app.use(cors(createCorsOptions()));
 app.use(express.json({ limit: "100kb" }));
 app.use((req, _res, next) => { const raw = req.headers.cookie ?? ""; req.cookies = Object.fromEntries(raw.split(";").map(part => part.trim().split(/=(.*)/s).slice(0, 2)).filter(([key, value]) => !!key && value !== undefined).map(([key, value]) => { try { return [key, decodeURIComponent(value!)]; } catch { return [key, value!]; } })); next(); });
 const authLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: true, legacyHeaders: false, handler: (_req, res) => res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many sign-in attempts. Try again later." } }) });
