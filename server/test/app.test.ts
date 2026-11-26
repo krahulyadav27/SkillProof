@@ -38,8 +38,10 @@ describe.skipIf(!process.env.DATABASE_URL)("PostgreSQL API integration", () => {
   afterAll(async () => { await pool.end(); });
 
   it("registers, logs in, loads and updates a profile, and rejects invalid credentials", async () => {
-    const login = await request(app).post("/api/auth/login").send({ email, password });
+    const login = await student.post("/api/auth/login").send({ email, password });
     expect(login.status).toBe(200);
+    expect(login.headers["set-cookie"][0]).toMatch(/HttpOnly/i);
+    expect((await student.get("/api/dashboard")).status).toBe(200);
     expect((await student.get("/api/auth/me")).body.data.user.id).toBe(studentId);
     const profile = await student.patch("/api/profile").send({ name: "Test Student Updated", bio: "Testing the profile endpoint." });
     expect(profile.status).toBe(200);

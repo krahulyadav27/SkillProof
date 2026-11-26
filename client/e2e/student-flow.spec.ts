@@ -60,10 +60,13 @@ test("logout blocks browser back and allows login after a revoked-session 401", 
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password").fill("auth-e2e-password-123");
   const freshLoginResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/auth/login");
+  const dashboardResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/dashboard");
   await page.getByRole("button", { name: "Log in" }).click();
   expect((await freshLoginResponse).status()).toBe(200);
+  expect((await dashboardResponse).status()).toBe(200);
   await expect(page).toHaveURL(/dashboard/);
   await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
+  await expect(page.getByText("Please sign in.")).toHaveCount(0);
   expect(authMeRequests).toBe(1);
 });
 
